@@ -30,6 +30,6 @@ def generate_hash(hash):
         hasher = hashlib.md5()
     else:
         raise Exception("Invalid hash type passed: " + hash.function_type)
-    file = open(hash.target, "r")
-    hasher.update(file.read().encode('utf-8'))
+    file = open(hash.target, "rb")
+    hasher.update(file.read())
     return hasher.hexdigest()
