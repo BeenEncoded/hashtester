@@ -1,8 +1,34 @@
-import sys, hashalgo
+import sys, hashlib
 
-from hashalgo import *
 from PyQt5.QtWidgets import *
+from enum import IntEnum
+from pathlib import Path
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+
+global_font = QFont("monospaced", 10)
+result_font = QFont("monospaced", 14)
+
+class hash_function_t(IntEnum):
+    MD5 = 0
+    SHA1 = 1
+    SHA256 = 2
+    SHA384 = 3
+    SHA512 = 4
+
+# Generates a tuple of hashes for the specified file.
+# The tuple is such that you should be able to reference its members
+# with hash_function_t.  Example:  hashes[hash_function_t.MD5] would be the md5
+# hash.
+def generate_hash(target):
+    if(Path(target).is_file() == False):
+        return None
+    file = open(target, "rb").read()
+    return (hashlib.md5(file).hexdigest(), \
+            hashlib.sha1(file).hexdigest(), \
+            hashlib.sha256(file).hexdigest(), \
+            hashlib.sha384(file).hexdigest(), \
+            hashlib.sha512(file).hexdigest())
 
 class input_widget(QWidget):
     def __init__(self, parent):
@@ -17,7 +43,9 @@ class input_widget(QWidget):
         self.hash_labels = []
         for e in hash_function_t:
             self.hash_labels.append(QLabel(""))
+            self.hash_labels[e].setFont(global_font)
             self.hash_labels[e].setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self.result_label.setFont(result_font)
         
         layout = QVBoxLayout()
         layout.addWidget(self.hash_textbox)
@@ -32,22 +60,25 @@ class input_widget(QWidget):
 
     def _label_hash(self, hashname, label):
         l = QHBoxLayout()
-        l.addWidget(QLabel(hashname + ": "))
+        hashname_label = QLabel(hashname + ": ")
+        hashname_label.setFont(global_font)
+        l.addWidget(hashname_label)
         l.addWidget(label)
         return l
     
     def _test(self):
-        h = hash_function_data()
-        h.target = QFileDialog.getOpenFileName()[0]
-        print("Target: " + h.target)
-        thash = ""
-        self.result_label.setText("No Match.")
-        for e in hash_function_t:
-            h.function_type = e
-            thash = generate_hash(h)
-            self.hash_labels[e].setText(thash)
-            if(thash == self.hash_textbox.text()):
-                self.result_label.setText("MATCH!")
+        self.result_label.setText("Please wait, reading file...")
+        target = QFileDialog.getOpenFileName()[0]
+        hashes = generate_hash(target)
+        if(hashes is not None):
+            self.result_label.setText("No Match.")
+            for h in hash_function_t:
+                if(hashes[h] == self.hash_textbox.text()):
+                    self.result_label.setText("MATCH!")
+                self.hash_labels[h].setText(hashes[h])
+        else:
+            self.result_label.setText("Canceled.")
+            
     
     def _connect_slots(self):
         pass
