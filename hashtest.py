@@ -36,6 +36,7 @@ class HashThread(threading.Thread):
         self.target = target
         self.blocksize = blocksize
         self.hashes = None
+        self.cancel = False
 
         self.com = HashThread.guicom()
 
@@ -44,6 +45,7 @@ class HashThread(threading.Thread):
     # with hash_function_t.  Example:  hashes[hash_function_t.MD5] would be the md5
     # hash.
     def run(self):
+        self.cancel = False
         if not os.path.isfile(self.target):
             return None
         hashes = [
@@ -59,7 +61,7 @@ class HashThread(threading.Thread):
         self.status.percent = 0
         self._setstatus(self.status)
         with open(self.target, 'rb') as file:
-            while True:
+            while not self.cancel:
                 block = file.read(self.blocksize)
                 file_read += len(block)
                 self.status.percent = ((file_read * 100) / file_size)
@@ -68,7 +70,10 @@ class HashThread(threading.Thread):
                     break
                 for h in hashes:
                     h.update(block)
-        self.hashes = [h.hexdigest() for h in hashes]
+        if not self.cancel:
+            self.hashes = [h.hexdigest() for h in hashes]
+        else:
+            self.hashes = ["Canceled" for x in range(0, len(hashes))]
         self._finished()
 
     def _setstatus(self, status):
@@ -88,6 +93,7 @@ class input_widget(QWidget):
         self.test_button = QPushButton("Test a File Against this Hash")
         self.result_label = QLabel("No Match!")
         self.progress_bar = QProgressBar()
+        self.cancel_button = QPushButton("Cancel")
 
         self.hash_labels = []
         for e in hash_function_t:
@@ -97,14 +103,18 @@ class input_widget(QWidget):
         self.result_label.setFont(result_font)
         
         layout = QVBoxLayout()
+        button_layout = QHBoxLayout()
         layout.addWidget(self.hash_textbox)
-        layout.addWidget(self.test_button)
+        button_layout.addWidget(self.test_button)
+        button_layout.addWidget(self.cancel_button)
+        layout.addLayout(button_layout)
         layout.addWidget(self.progress_bar)
         layout.addWidget(self.result_label)
 
         for e in hash_function_t:
             layout.addLayout(self._label_hash(e.name, self.hash_labels[e]))
-        
+
+        self._updateEnabledButtons()
         return layout
 
     def _label_hash(self, hashname, label):
@@ -115,6 +125,15 @@ class input_widget(QWidget):
         l.addWidget(label)
         return l
     
+    @pyqtSlot()
+    def _updateEnabledButtons(self):
+        if not hasattr(self, "hash_thread"):
+            self.test_button.setEnabled(True)
+            self.cancel_button.setEnabled(False)
+        else:
+            self.test_button.setEnabled(not self.hash_thread.isAlive())
+            self.cancel_button.setEnabled(self.hash_thread.isAlive())
+
     @pyqtSlot(ProcessStatus)
     def _statusUpdate(self, status):
         self.progress_bar.setValue(status.percent)
@@ -124,10 +143,12 @@ class input_widget(QWidget):
         self.hash_thread.com.updatestatus.connect(self._statusUpdate)
         self.hash_thread.com.finishedprocess.connect(self._hashingFinished)
         self.hash_thread.start()
+        self._updateEnabledButtons()
 
     @pyqtSlot()
     def _hashingFinished(self):
         self.hash_thread.join()
+        self._updateEnabledButtons()
         if(self.hash_thread.hashes is not None):
             self.result_label.setText("No Match.")
             for h in hash_function_t:
@@ -139,12 +160,20 @@ class input_widget(QWidget):
 
     @pyqtSlot()
     def _test(self):
+        self.test_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
         self.result_label.setText("Please wait, reading file...")
         target = QFileDialog.getOpenFileName()[0]
         self.run_hashes(target)
     
+    @pyqtSlot()
+    def _cancel_hash(self):
+        self.hash_thread.cancel = True
+        self._hashingFinished()
+
     def _connect_slots(self):
         self.test_button.clicked.connect(self._test)
+        self.cancel_button.clicked.connect(self._cancel_hash)
         
 
 class main_window(QMainWindow):
