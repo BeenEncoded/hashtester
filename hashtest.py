@@ -1,3 +1,19 @@
+# Hashtest produces and tests hashes against a file.
+# Copyright (C) 2019 Jonathan Whitlock
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import sys, hashlib, os, threading, dataclasses, semver
 
 from PyQt5.QtWidgets import *
@@ -175,12 +191,30 @@ class input_widget(QWidget):
     def _connect_slots(self):
         self.test_button.clicked.connect(self._test)
         self.cancel_button.clicked.connect(self._cancel_hash)
-        
 
 class main_window(QMainWindow):
     def __init__(self, parent):
         super(main_window, self).__init__(parent)
+
+        self.menuBar().addAction("About", self._about)
         self.setCentralWidget(input_widget(self))
+    
+    @pyqtSlot()
+    def _about(self):
+        message = """ Hashtest produces and tests hashes against a file.  Copyright (C) 2019 Jonathan Whitlock
+
+        This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>. """
+
+        for x in range(0, 2):
+            message += os.linesep
+        
+        message += ("Hashtest version " + str(VERSION))
+
+        QMessageBox.information(self, "GNU GPLv3: ", message)
 
 def main(argv):
     app = QApplication(argv)
