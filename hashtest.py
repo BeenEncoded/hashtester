@@ -1,4 +1,4 @@
-import sys, hashlib, os, threading, dataclasses
+import sys, hashlib, os, threading, dataclasses, semver
 
 from PyQt5.QtWidgets import *
 from enum import IntEnum
@@ -8,7 +8,8 @@ from PyQt5.QtGui import QFont
 
 global_font = QFont("monospaced", 10)
 result_font = QFont("monospaced", 14)
-HASH_BLOCKSIZE = ((2**10) * 5) #10 Kb blocksize
+HASH_BLOCKSIZE = ((2**10) * 5) #5 Kb blocksize
+VERSION = semver.VersionInfo(1, 1, 0, "stable")
 
 class hash_function_t(IntEnum):
     MD5 = 0
