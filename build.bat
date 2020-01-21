@@ -1,0 +1,1 @@
+python.exe -m PyInstaller --clean --win-private-assemblies --onefile -w -n hashtestwindows .\src\hashtest.py

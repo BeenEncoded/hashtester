@@ -25,7 +25,7 @@ from PyQt5.QtGui import QFont
 global_font = QFont("monospaced", 10)
 result_font = QFont("monospaced", 14)
 HASH_BLOCKSIZE = ((2**10) * 5) #5 Kb blocksize
-VERSION = semver.VersionInfo(1, 1, 0, "stable")
+VERSION = semver.VersionInfo(1, 1, 1, "stable")
 
 class hash_function_t(IntEnum):
     MD5 = 0
